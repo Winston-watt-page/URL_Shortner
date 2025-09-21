@@ -1,13 +1,13 @@
-import sqlite3
-import string, random, os
+import sqlite3, string, random, os
 from flask import Flask, request, jsonify, redirect
 
 app = Flask(__name__)
 
-# Ensure database exists
-DB_PATH = "database/urls.db"
+# ✅ Create database folder dynamically
 os.makedirs("database", exist_ok=True)
+DB_PATH = "database/urls.db"
 
+# ✅ SQLite connection
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 c = conn.cursor()
 c.execute("""
@@ -23,21 +23,26 @@ def generate_code(length=6):
 
 @app.route("/shorten", methods=["POST"])
 def shorten():
-    data = request.get_json()
-    long_url = data.get("url")
-    if not long_url:
-        return jsonify(error="No URL provided"), 400
+    try:
+        data = request.get_json()
+        long_url = data.get("url")
+        if not long_url:
+            return jsonify(error="No URL provided"), 400
 
-    code = generate_code()
-    # Ensure unique code
-    while c.execute("SELECT 1 FROM urls WHERE code=?", (code,)).fetchone():
         code = generate_code()
+        while c.execute("SELECT 1 FROM urls WHERE code=?", (code,)).fetchone():
+            code = generate_code()
 
-    c.execute("INSERT INTO urls (code, long_url) VALUES (?, ?)", (code, long_url))
-    conn.commit()
+        c.execute("INSERT INTO urls (code, long_url) VALUES (?, ?)", (code, long_url))
+        conn.commit()
 
-    base_url = f"https://{os.environ.get('VERCEL_URL', 'localhost')}/"
-    return jsonify(short_url=f"{base_url}{code}")
+        base_url = f"https://{os.environ.get('VERCEL_URL', 'localhost')}/"
+        return jsonify(short_url=f"{base_url}{code}")
+
+    except Exception as e:
+        # ✅ Print error for debugging
+        print("ERROR:", e)
+        return jsonify(error=str(e)), 500
 
 @app.route("/<code>")
 def redirect_url(code):
