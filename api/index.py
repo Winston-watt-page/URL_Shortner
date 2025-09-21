@@ -10,6 +10,7 @@ def shorten():
     if not long_url:
         return jsonify(error="No URL provided"), 400
 
+    # Encode URL in Base64
     encoded = base64.urlsafe_b64encode(long_url.encode()).decode()
     base_url = f"https://{request.host}/"
     short_url = f"{base_url}go/{encoded}"
