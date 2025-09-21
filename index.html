@@ -109,11 +109,12 @@ async function shorten(){
     isLoading=true; btn.disabled=true; btn.innerHTML='<span class="loading"></span>Shortening...';
 
     try{
-        const response = await fetch('/api/shorten', {
+        const response = await fetch('/api/index.py/shorten', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
 });
+
 
 
         if(!response.ok) throw new Error(`Server error: ${response.status}`);
