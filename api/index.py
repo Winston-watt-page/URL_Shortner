@@ -1,12 +1,7 @@
-import string, random
-from flask import Flask, request, jsonify, redirect
+import base64
+from flask import Flask, request, redirect, jsonify
 
 app = Flask(__name__)
-
-urls = {}  # In-memory storage
-
-def generate_code(length=6):
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 @app.route("/shorten", methods=["POST"])
 def shorten():
@@ -15,16 +10,15 @@ def shorten():
     if not long_url:
         return jsonify(error="No URL provided"), 400
 
-    code = generate_code()
-    while code in urls:
-        code = generate_code()
-
-    urls[code] = long_url
+    encoded = base64.urlsafe_b64encode(long_url.encode()).decode()
     base_url = f"https://{request.host}/"
-    return jsonify(short_url=f"{base_url}{code}")
+    short_url = f"{base_url}go/{encoded}"
+    return jsonify(short_url=short_url)
 
-@app.route("/<code>")
-def redirect_url(code):
-    if code in urls:
-        return redirect(urls[code])
-    return "URL not found", 404
+@app.route("/go/<encoded>")
+def redirect_encoded(encoded):
+    try:
+        long_url = base64.urlsafe_b64decode(encoded.encode()).decode()
+        return redirect(long_url)
+    except Exception:
+        return "Invalid or corrupted URL", 400
